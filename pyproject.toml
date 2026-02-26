@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "steelworks-operations"
+version = "0.1.0"
+description = "SteelWorks Internal Operations Reporting Tool"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+sqlalchemy = "^2.0"
+pytest = "^7.0"
+streamlit = "^1.0"
+psycopg2-binary = "^2.9"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0"
+pytest-cov = "^4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
