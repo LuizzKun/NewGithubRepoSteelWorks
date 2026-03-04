@@ -38,7 +38,7 @@ jobs:
       - name: Generate SBOM with CycloneDX
         run: |
           pip install cyclonedx-bom
-          cyclonedx-py -o sbom-cyclonedx.json
+          cyclonedx-py requirements -o sbom-cyclonedx.json
       
       - name: Generate requirements.txt
         run: |
