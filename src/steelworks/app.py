@@ -43,9 +43,7 @@ st.set_page_config(
 )
 
 st.title("🏭 SteelWorks Operations Reporting Tool")
-st.markdown(
-    "Review production, quality (QE), and shipment information by lot and date"
-)
+st.markdown("Review production, quality (QE), and shipment information by lot and date")
 
 # ===== Initialize Session Service =====
 
@@ -145,7 +143,9 @@ if page == "Dashboard (Overview)":
             counts = [d["total_defects"] for d in trend_data]
 
             fig, ax = plt.subplots(figsize=(10, 4))
-            ax.plot(dates, counts, marker="o", linewidth=2, markersize=6, color="#FF6B6B")
+            ax.plot(
+                dates, counts, marker="o", linewidth=2, markersize=6, color="#FF6B6B"
+            )
             ax.fill_between(dates, counts, alpha=0.3, color="#FF6B6B")
             ax.set_xlabel("Date")
             ax.set_ylabel("Total Defects")
@@ -210,7 +210,9 @@ elif page == "Production Line Quality":
 elif page == "Defect Trends":
     st.header("📉 Defect Trend Analysis")
 
-    st.write("AC 2: Identify defect trends over time and AC 3: Aggregate by defect type.")
+    st.write(
+        "AC 2: Identify defect trends over time and AC 3: Aggregate by defect type."
+    )
 
     try:
         # Trend over time
@@ -229,7 +231,9 @@ elif page == "Defect Trends":
                 markersize=8,
                 color="#FF6B6B",
             )
-            ax.fill_between(df_trend["date"], df_trend["total_defects"], alpha=0.3, color="#FF6B6B")
+            ax.fill_between(
+                df_trend["date"], df_trend["total_defects"], alpha=0.3, color="#FF6B6B"
+            )
             ax.set_xlabel("Date")
             ax.set_ylabel("Defects")
             ax.set_title(f"Daily Defect Count ({start_date} to {end_date})")
@@ -350,7 +354,9 @@ elif page == "Lot Details (Drill-down)":
                 with col1:
                     if quality["defects"]:
                         defects_df = pd.DataFrame(quality["defects"])
-                        st.dataframe(defects_df, use_container_width=True, hide_index=True)
+                        st.dataframe(
+                            defects_df, use_container_width=True, hide_index=True
+                        )
                     else:
                         st.info("No defects found (clean lot).")
                 with col2:

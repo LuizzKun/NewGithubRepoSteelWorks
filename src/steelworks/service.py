@@ -88,7 +88,10 @@ class OperationsReportingService:
                 ProductionLine.line_code,
                 func.count(InspectionRecord.id).label("defect_count"),
             )
-            .join(ProductionRecord, ProductionLine.id == ProductionRecord.production_line_id)
+            .join(
+                ProductionRecord,
+                ProductionLine.id == ProductionRecord.production_line_id,
+            )
             .join(InspectionRecord, ProductionRecord.lot_id == InspectionRecord.lot_id)
             .filter(InspectionRecord.inspection_date.between(start_date, end_date))
             .group_by(ProductionLine.line_code)
@@ -313,8 +316,13 @@ class OperationsReportingService:
 
         # Get production records for this lot
         production_records = (
-            self.session.query(ProductionLine.line_code, ProductionRecord.production_date)
-            .join(ProductionRecord, ProductionLine.id == ProductionRecord.production_line_id)
+            self.session.query(
+                ProductionLine.line_code, ProductionRecord.production_date
+            )
+            .join(
+                ProductionRecord,
+                ProductionLine.id == ProductionRecord.production_line_id,
+            )
             .filter(ProductionRecord.lot_id == lot.id)
             .all()
         )
@@ -334,7 +342,9 @@ class OperationsReportingService:
 
         # Get shipment status
         shipment = (
-            self.session.query(ShipmentRecord).filter(ShipmentRecord.lot_id == lot.id).first()
+            self.session.query(ShipmentRecord)
+            .filter(ShipmentRecord.lot_id == lot.id)
+            .first()
         )
 
         # Calculate days to ship if applicable
@@ -351,7 +361,11 @@ class OperationsReportingService:
             "quality_info": {
                 "total_defects": int(total_defects),
                 "defects": [
-                    {"defect_code": defect_code, "qty": int(qty or 0), "date": insp_date}
+                    {
+                        "defect_code": defect_code,
+                        "qty": int(qty or 0),
+                        "date": insp_date,
+                    }
                     for defect_code, qty, insp_date in inspection_records
                 ],
             },
@@ -364,7 +378,9 @@ class OperationsReportingService:
 
     # ===== AC 6: Production aggregation by date =====
 
-    def get_production_summary(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
+    def get_production_summary(
+        self, start_date: date, end_date: date
+    ) -> List[Dict[str, Any]]:
         """
         AC 6: Aggregate production records by date and line.
 
@@ -391,14 +407,18 @@ class OperationsReportingService:
                 Lot.lot_code, ProductionLine.line_code, ProductionRecord.production_date
             )
             .join(ProductionRecord, Lot.id == ProductionRecord.lot_id)
-            .join(ProductionLine, ProductionLine.id == ProductionRecord.production_line_id)
+            .join(
+                ProductionLine, ProductionLine.id == ProductionRecord.production_line_id
+            )
             .filter(ProductionRecord.production_date.between(start_date, end_date))
             .all()
         )
 
         result = []
         for lot_code, line_code, record_date in records:
-            result.append({"date": record_date, "line_code": line_code, "lot_code": lot_code})
+            result.append(
+                {"date": record_date, "line_code": line_code, "lot_code": lot_code}
+            )
 
         return sorted(result, key=lambda x: (x["date"], x["line_code"]))
 

@@ -52,7 +52,6 @@ def create_session() -> Session:
     return session
 
 
-
 class Lot(Base):  # type: ignore[name-defined,valid-type,misc]
     """Represents a production lot"""
 
