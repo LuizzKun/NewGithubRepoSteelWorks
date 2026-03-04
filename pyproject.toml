@@ -15,6 +15,11 @@ psycopg2-binary = "^2.9"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 pytest-cov = "^4.0"
+ruff = "^0.15.4"
+mypy = "^1.19.1"
+pre-commit = "^3.0"
+pip-licenses = "^5.0"
+cyclonedx-bom = "^6.0"
 
 [build-system]
 requires = ["poetry-core"]
