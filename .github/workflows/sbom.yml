@@ -45,7 +45,7 @@ jobs:
           pip freeze > requirements-frozen.txt
       
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-files
           path: |
