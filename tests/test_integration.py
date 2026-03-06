@@ -52,11 +52,16 @@ def test_engine():
 
 @pytest.fixture(scope="function")
 def test_session(test_engine):
-    """Create a new database session for each test."""
-    session = Session(test_engine)
+    """Create a new database session for each test with transaction isolation."""
+    connection = test_engine.connect()
+    transaction = connection.begin()
+    session = Session(bind=connection)
+    
     yield session
-    session.rollback()
+    
     session.close()
+    transaction.rollback()
+    connection.close()
 
 
 @pytest.fixture(scope="function")
