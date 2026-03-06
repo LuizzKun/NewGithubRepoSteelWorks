@@ -17,6 +17,7 @@ Environment Variables:
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -56,6 +57,26 @@ def get_database_url() -> str:
     return f"postgresql://{user}:{password}@{host}:{port}/{name}"
 
 
+def get_safe_connection_info(database_url: str) -> str:
+    """
+    Extract safe connection information from database URL without exposing password.
+
+    Args:
+        database_url: PostgreSQL connection string
+
+    Returns:
+        str: Safe connection info (host, port, database name only)
+    """
+    try:
+        parsed = urlparse(database_url)
+        host = parsed.hostname or "unknown"
+        port = parsed.port or 5432
+        database = parsed.path.lstrip("/") or "unknown"
+        return f"{host}:{port}/{database}"
+    except Exception:
+        return "postgresql://***"
+
+
 def run_sql_file(conn, filepath: Path) -> None:
     """
     Execute SQL from a file.
@@ -85,8 +106,9 @@ def main() -> None:
     """Main database initialization routine."""
     try:
         database_url = get_database_url()
+        safe_connection_info = get_safe_connection_info(database_url)
         print("🔌 Connecting to PostgreSQL...")
-        print(f"   Connection string: {database_url.split('@')[0]}@{database_url.split('@')[1] if '@' in database_url else 'unknown'}")
+        print(f"   Connection: {safe_connection_info}")
 
         conn = psycopg2.connect(database_url)
 
