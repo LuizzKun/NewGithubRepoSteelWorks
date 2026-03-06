@@ -48,18 +48,21 @@ st.markdown("Review production, quality (QE), and shipment information by lot an
 # ===== Initialize Session Service =====
 
 
-@st.cache_resource
 def get_service() -> OperationsReportingService:
     """
-    Cache service instance to avoid recreating database connection per render.
+    Create a fresh service instance with new database session for each page render.
 
-    Streamlit reruns script on interaction; caching preserves session state.
+    This ensures failed transactions don't persist across page interactions.
 
-    Time Complexity: O(1) cache hit, O(1) initial DB connection
-    Space Complexity: O(1) singleton service
+    Time Complexity: O(1) DB connection
+    Space Complexity: O(1) service instance
     """
-    session = create_session()
-    return OperationsReportingService(session)
+    try:
+        session = create_session()
+        return OperationsReportingService(session)
+    except Exception as e:
+        st.error(f"Failed to connect to database: {e}")
+        st.stop()
 
 
 service = get_service()
@@ -169,6 +172,7 @@ if page == "Dashboard (Overview)":
             st.metric("Lots Pending", len(pending))
 
     except Exception as e:
+        service.session.rollback()
         st.error(f"Error loading dashboard: {str(e)}")
 
 # ===== Page 2: Production Line Quality =====
@@ -292,10 +296,10 @@ elif page == "Shipment Status":
             # Metrics
             col1, col2, col3 = st.columns(3)
             with col1:
-                shipped_count = len([s for s in shipment_data if s["is_shipped"]])
+                shipped_count = len([s for s in shipment_data if s["ship_status"] == "Shipped"])
                 st.metric("Shipped Lots", shipped_count)
             with col2:
-                pending_count = len([s for s in shipment_data if not s["is_shipped"]])
+                pending_count = len([s for s in shipment_data if s["ship_status"] != "Shipped"])
                 st.metric("Pending Shipments", pending_count)
             with col3:
                 total_defects = sum(s["total_defects"] for s in shipment_data)
@@ -370,10 +374,17 @@ elif page == "Lot Details (Drill-down)":
 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    status = "✅ Shipped" if shipment["is_shipped"] else "⏳ Pending"
+                    status_display = {
+                        "Shipped": "✅ Shipped",
+                        "On Hold": "⏸️ On Hold", 
+                        "Partial": "📦 Partial",
+                        "Backordered": "⏳ Backordered",
+                        "Pending": "⏳ Pending"
+                    }
+                    status = status_display.get(shipment["ship_status"], shipment["ship_status"])
                     st.metric("Status", status)
                 with col2:
-                    st.metric("Ship Date", shipment["ship_date"] or "N/A")
+                    st.metric("Ship Date", str(shipment["ship_date"]) if shipment["ship_date"] else "N/A")
                 with col3:
                     st.metric("Days to Ship", shipment["days_to_ship"] or "Pending")
             else:

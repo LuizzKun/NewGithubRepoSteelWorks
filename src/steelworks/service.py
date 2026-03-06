@@ -232,7 +232,7 @@ class OperationsReportingService:
         Returns:
             List[Dict]: [{
                 'lot_code': str,
-                'is_shipped': bool,
+                'ship_status': str,
                 'ship_date': Optional[date],
                 'total_defects': int
             }, ...] sorted by lot_code
@@ -264,7 +264,7 @@ class OperationsReportingService:
             result.append(
                 {
                     "lot_code": lot.lot_code,
-                    "is_shipped": shipment.is_shipped if shipment else False,
+                    "ship_status": shipment.ship_status if shipment else "Pending",
                     "ship_date": shipment.ship_date if shipment else None,
                     "total_defects": int(defect_count),
                 }
@@ -297,7 +297,7 @@ class OperationsReportingService:
                     ]
                 },
                 'shipment_info': {
-                    'is_shipped': bool,
+                    'ship_status': str,
                     'ship_date': Optional[date],
                     'days_to_ship': Optional[int]
                 }
@@ -317,7 +317,7 @@ class OperationsReportingService:
         # Get production records for this lot
         production_records = (
             self.session.query(
-                ProductionLine.line_code, ProductionRecord.production_date
+                ProductionLine.line_code, ProductionRecord.record_date
             )
             .join(
                 ProductionRecord,
@@ -349,7 +349,7 @@ class OperationsReportingService:
 
         # Calculate days to ship if applicable
         days_to_ship = None
-        if shipment and shipment.is_shipped and production_records:
+        if shipment and shipment.ship_status == 'Shipped' and production_records:
             first_prod_date = min(date for _, date in production_records)
             days_to_ship = (shipment.ship_date - first_prod_date).days
 
@@ -370,7 +370,7 @@ class OperationsReportingService:
                 ],
             },
             "shipment_info": {
-                "is_shipped": shipment.is_shipped if shipment else False,
+                "ship_status": shipment.ship_status if shipment else "Pending",
                 "ship_date": shipment.ship_date if shipment else None,
                 "days_to_ship": days_to_ship,
             },
@@ -404,13 +404,13 @@ class OperationsReportingService:
         """
         records = (
             self.session.query(
-                Lot.lot_code, ProductionLine.line_code, ProductionRecord.production_date
+                Lot.lot_code, ProductionLine.line_code, ProductionRecord.record_date
             )
             .join(ProductionRecord, Lot.id == ProductionRecord.lot_id)
             .join(
                 ProductionLine, ProductionLine.id == ProductionRecord.production_line_id
             )
-            .filter(ProductionRecord.production_date.between(start_date, end_date))
+            .filter(ProductionRecord.record_date.between(start_date, end_date))
             .all()
         )
 
@@ -429,7 +429,7 @@ class OperationsReportingService:
         Get list of lots waiting to ship (not yet shipped).
 
         Returns:
-            List[str]: Lot codes of lots with is_shipped=FALSE
+            List[str]: Lot codes of lots with ship_status not 'Shipped'
 
         Time Complexity: O(log n) index + O(m)
         Space Complexity: O(m)
@@ -437,7 +437,7 @@ class OperationsReportingService:
         results = (
             self.session.query(Lot.lot_code)
             .join(ShipmentRecord, Lot.id == ShipmentRecord.lot_id)
-            .filter(ShipmentRecord.is_shipped == False)  # noqa: E712
+            .filter(ShipmentRecord.ship_status.in_(['On Hold', 'Backordered', 'Partial']))
             .all()
         )
         return [lot_code for (lot_code,) in results]
@@ -455,7 +455,7 @@ class OperationsReportingService:
         results = (
             self.session.query(Lot.lot_code, ShipmentRecord.ship_date)
             .join(ShipmentRecord, Lot.id == ShipmentRecord.lot_id)
-            .filter(ShipmentRecord.is_shipped == True)  # noqa: E712
+            .filter(ShipmentRecord.ship_status == 'Shipped')
             .order_by(ShipmentRecord.ship_date.desc())
             .all()
         )

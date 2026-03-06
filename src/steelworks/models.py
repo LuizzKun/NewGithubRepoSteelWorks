@@ -88,7 +88,7 @@ class ProductionRecord(Base):  # type: ignore[name-defined,valid-type,misc]
     production_line_id = Column(
         Integer, ForeignKey("production_lines.id"), nullable=False
     )
-    production_date = Column(Date, nullable=False)
+    record_date = Column(Date, nullable=False)
     shift = Column(String(50), nullable=False)
     part_number = Column(String(255), nullable=False)
     units_planned = Column(Integer, nullable=False)
@@ -125,7 +125,7 @@ class ShipmentRecord(Base):  # type: ignore[name-defined,valid-type,misc]
 
     id = Column(Integer, primary_key=True)
     lot_id = Column(Integer, ForeignKey("lots.id"), nullable=False)
-    is_shipped = Column(Boolean, nullable=False, default=False)
+    ship_status = Column(String(50), nullable=False)
     ship_date = Column(Date)
     qty_shipped = Column(Integer, nullable=False, default=0)
     sales_order_number = Column(String(255))
