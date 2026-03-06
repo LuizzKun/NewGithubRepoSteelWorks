@@ -85,7 +85,7 @@ def sample_data(test_session):
     prod1 = ProductionRecord(
         lot_id=lot1.id,
         production_line_id=line_a.id,
-        production_date=today - timedelta(days=5),
+        record_date=today - timedelta(days=5),
         shift="Day",
         part_number="PART-001",
         units_planned=100,
@@ -97,7 +97,7 @@ def sample_data(test_session):
     prod2 = ProductionRecord(
         lot_id=lot2.id,
         production_line_id=line_b.id,
-        production_date=today - timedelta(days=3),
+        record_date=today - timedelta(days=3),
         shift="Night",
         part_number="PART-002",
         units_planned=200,
@@ -108,7 +108,7 @@ def sample_data(test_session):
     prod3 = ProductionRecord(
         lot_id=lot3.id,
         production_line_id=line_a.id,
-        production_date=today - timedelta(days=1),
+        record_date=today - timedelta(days=1),
         shift="Day",
         part_number="PART-003",
         units_planned=150,
@@ -145,21 +145,21 @@ def sample_data(test_session):
     # Create shipment records
     ship1 = ShipmentRecord(
         lot_id=lot1.id,
-        is_shipped=True,
+        ship_status="Shipped",
         ship_date=today - timedelta(days=2),
         qty_shipped=95,
         customer="Customer A",
     )
     ship2 = ShipmentRecord(
         lot_id=lot2.id,
-        is_shipped=False,
+        ship_status="On Hold",
         ship_date=None,
         qty_shipped=0,
         hold_reason="Quality hold",
     )
     ship3 = ShipmentRecord(
         lot_id=lot3.id,
-        is_shipped=False,
+        ship_status="Partial",
         ship_date=None,
         qty_shipped=0,
     )
@@ -232,8 +232,8 @@ class TestOperationsReportingServiceIntegration:
         result = service.get_shipped_lots_summary()
         
         assert len(result) == 3  # 3 lots total
-        shipped = [item for item in result if item["is_shipped"]]
-        pending = [item for item in result if not item["is_shipped"]]
+        shipped = [item for item in result if item["ship_status"] == "Shipped"]
+        pending = [item for item in result if item["ship_status"] != "Shipped"]
         
         assert len(shipped) == 1  # LOT-2024-001
         assert len(pending) == 2  # LOT-2024-002, LOT-2024-003
@@ -256,7 +256,7 @@ class TestOperationsReportingServiceIntegration:
         assert len(result["quality_info"]["defects"]) == 2
         
         # Check shipment info
-        assert result["shipment_info"]["is_shipped"] is True
+        assert result["shipment_info"]["ship_status"] == "Shipped"
         assert result["shipment_info"]["ship_date"] is not None
     
     def test_get_production_summary(self, test_session, sample_data):
@@ -319,7 +319,7 @@ class TestDatabaseConsistency:
         prod = ProductionRecord(
             lot_id=lot.id,
             production_line_id=line.id,
-            production_date=date.today(),
+            record_date=date.today(),
             shift="Day",
             part_number="TEST-PART",
             units_planned=100,

@@ -93,14 +93,15 @@ class TestStreamlitAppNavigation:
         """Verify navigation menu shows all pages."""
         # Check for navigation title
         expect(page.get_by_text("📊 Navigation")).to_be_visible()
+        sidebar = page.get_by_test_id("stSidebar")
         
         # Check for all page options
-        expect(page.get_by_text("Dashboard (Overview)")).to_be_visible()
-        expect(page.get_by_text("Production Line Quality")).to_be_visible()
-        expect(page.get_by_text("Defect Trends")).to_be_visible()
-        expect(page.get_by_text("Shipment Status")).to_be_visible()
-        expect(page.get_by_text("Lot Details (Drill-down)")).to_be_visible()
-        expect(page.get_by_text("Production Summary")).to_be_visible()
+        expect(sidebar.get_by_text("Dashboard (Overview)", exact=True)).to_be_visible()
+        expect(sidebar.get_by_text("Production Line Quality", exact=True)).to_be_visible()
+        expect(sidebar.get_by_text("Defect Trends", exact=True)).to_be_visible()
+        expect(sidebar.get_by_text("Shipment Status", exact=True)).to_be_visible()
+        expect(sidebar.get_by_text("Lot Details (Drill-down)", exact=True)).to_be_visible()
+        expect(sidebar.get_by_text("Production Summary", exact=True)).to_be_visible()
     
     def test_date_range_filter_visible(self, page: Page):
         """Verify date range filter controls exist."""
@@ -119,8 +120,8 @@ class TestDashboardPage:
         
         # Check for key sections
         expect(page.get_by_text("Production Lines with Most Defects")).to_be_visible()
-        expect(page.get_by_text("Defect Trend")).to_be_visible()
-        expect(page.get_by_text("Shipment Status")).to_be_visible()
+        expect(page.get_by_text("Defect Trend (Last 30 Days)")).to_be_visible()
+        expect(page.get_by_text("📦 Shipment Status")).to_be_visible()
     
     def test_dashboard_displays_defect_chart(self, page: Page):
         """Verify defect trend chart renders."""
@@ -179,14 +180,14 @@ class TestShipmentStatusPage:
     
     def test_shipment_status_page_loads(self, page: Page):
         """Navigate to Shipment Status page."""
-        page.get_by_text("Shipment Status").click()
+        page.get_by_test_id("stSidebar").get_by_text("Shipment Status", exact=True).click()
         page.wait_for_timeout(1000)
         
         expect(page.get_by_role("heading", name="Shipment Status Review")).to_be_visible()
     
     def test_shipment_status_shows_metrics(self, page: Page):
         """Verify shipment metrics display."""
-        page.get_by_text("Shipment Status").click()
+        page.get_by_test_id("stSidebar").get_by_text("Shipment Status", exact=True).click()
         page.wait_for_timeout(1000)
         
         # Check for shipment metrics
@@ -230,7 +231,7 @@ class TestLotDetailsPage:
             # Check for detail sections
             expect(page.get_by_text("Production Information")).to_be_visible()
             expect(page.get_by_text("Quality Inspection Information")).to_be_visible()
-            expect(page.get_by_text("Shipment Information")).to_be_visible()
+            expect(page.get_by_text("📬 Shipment Information")).to_be_visible()
 
 
 class TestProductionSummaryPage:
