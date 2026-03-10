@@ -11,10 +11,14 @@ sqlalchemy = "^2.0"
 pytest = "^7.0"
 streamlit = "^1.0"
 psycopg2-binary = "^2.9"
+matplotlib = "^3.8"
+python-dotenv = "^1.0"
+pandas = "^2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 pytest-cov = "^4.0"
+pytest-playwright = "^0.4.4"
 ruff = "^0.15.4"
 mypy = "^1.19.1"
 pre-commit = "^3.0"
@@ -24,3 +28,12 @@ cyclonedx-bom = "^6.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+python_version = "3.9"
+explicit_package_bases = true
+namespace_packages = true
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

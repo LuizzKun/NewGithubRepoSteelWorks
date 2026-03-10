@@ -4,6 +4,7 @@
 BEGIN;
 
 DROP TABLE IF EXISTS shipment_records;
+DROP TABLE IF EXISTS inspection_records;
 DROP TABLE IF EXISTS production_records;
 DROP TABLE IF EXISTS production_lines;
 DROP TABLE IF EXISTS lots;
@@ -64,6 +65,26 @@ CREATE TABLE production_records (
 );
 
 -- =========================
+-- Quality/Inspection (QE_Defects_Log)
+-- =========================
+
+CREATE TABLE inspection_records (
+    id BIGSERIAL PRIMARY KEY,
+
+    lot_id BIGINT NOT NULL,
+    inspection_date DATE NOT NULL,
+    defect_type TEXT NOT NULL,
+    quantity_defective INTEGER NOT NULL,
+
+    CONSTRAINT fk_inspection_records_lot
+        FOREIGN KEY (lot_id)
+        REFERENCES lots(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT ck_quantity_defective_nonneg CHECK (quantity_defective >= 0)
+);
+
+-- =========================
 -- Shipping (Ops_Shipping_Log)
 -- NOTE: multiple shipments per lot are allowed (Partial/Backordered/etc.)
 -- =========================
@@ -115,6 +136,12 @@ CREATE INDEX idx_production_records_line_date
 
 CREATE INDEX idx_production_records_lot_date
     ON production_records(lot_id, record_date);
+
+CREATE INDEX idx_inspection_records_lot_date
+    ON inspection_records(lot_id, inspection_date);
+
+CREATE INDEX idx_inspection_records_defect_type
+    ON inspection_records(defect_type);
 
 CREATE INDEX idx_shipment_records_lot_date
     ON shipment_records(lot_id, ship_date);
