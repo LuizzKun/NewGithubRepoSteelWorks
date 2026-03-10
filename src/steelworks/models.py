@@ -5,6 +5,9 @@ from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, creat
 from sqlalchemy.orm import declarative_base, relationship, Session
 from dotenv import load_dotenv
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 env_path = Path(__file__).resolve().parents[2] / ".env"
@@ -47,9 +50,17 @@ def create_session() -> Session:
     Time Complexity: O(1)
     Space Complexity: O(1)
     """
-    engine = create_engine(get_database_url(), echo=False)
-    session = Session(engine)
-    return session
+    logger.info("Creating database session")
+    try:
+        db_url = get_database_url()
+        logger.info(f"Connecting to database: {db_url.split('@')[1] if '@' in db_url else 'unknown'}")
+        engine = create_engine(db_url, echo=False)
+        session = Session(engine)
+        logger.info("Database session created successfully")
+        return session
+    except Exception as e:
+        logger.error(f"Failed to create database session: {str(e)}")
+        raise
 
 
 class Lot(Base):  # type: ignore[name-defined,valid-type,misc]

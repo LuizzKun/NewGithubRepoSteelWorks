@@ -25,13 +25,28 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from dotenv import load_dotenv
+import logging
+import sys
 
 from src.steelworks.models import create_session
 from src.steelworks.service import OperationsReportingService
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('steelworks_app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Load environment variables
 env_path = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(dotenv_path=env_path)
+logger.info("Application starting - SteelWorks Operations Reporting Tool")
+logger.info(f"Environment loaded from: {env_path}")
 
 # ===== Page Configuration =====
 
@@ -58,9 +73,11 @@ def get_service() -> OperationsReportingService:
     Space Complexity: O(1) service instance
     """
     try:
+        logger.info("Initializing database service for page render")
         session = create_session()
         return OperationsReportingService(session)
     except Exception as e:
+        logger.error(f"Database connection failed: {str(e)}")
         st.error(f"Failed to connect to database: {e}")
         st.stop()
 
@@ -81,6 +98,7 @@ page = st.sidebar.radio(
         "Production Summary",
     ],
 )
+logger.info(f"User navigated to page: {page}")
 
 st.sidebar.markdown("---")
 st.sidebar.markdown(

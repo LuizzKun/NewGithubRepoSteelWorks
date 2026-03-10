@@ -25,6 +25,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import logging
 from src.steelworks.models import (
     Lot,
     ProductionRecord,
@@ -32,6 +33,8 @@ from src.steelworks.models import (
     ShipmentRecord,
     ProductionLine,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OperationsReportingService:
@@ -59,6 +62,7 @@ class OperationsReportingService:
         Space Complexity: O(1)
         """
         self.session = session
+        logger.info("OperationsReportingService initialized")
 
     # ===== AC 1: Identify which production lines had the most defects =====
 
@@ -83,23 +87,28 @@ class OperationsReportingService:
 
         Coverage: AC 1
         """
-        result = (
-            self.session.query(
-                ProductionLine.line_code,
-                func.count(InspectionRecord.id).label("defect_count"),
+        logger.info(f"Querying production lines with most defects: {start_date} to {end_date}")
+        try:
+            result = (
+                self.session.query(
+                    ProductionLine.line_code,
+                    func.count(InspectionRecord.id).label("defect_count"),
+                )
+                .join(
+                    ProductionRecord,
+                    ProductionLine.id == ProductionRecord.production_line_id,
+                )
+                .join(InspectionRecord, ProductionRecord.lot_id == InspectionRecord.lot_id)
+                .filter(InspectionRecord.inspection_date.between(start_date, end_date))
+                .group_by(ProductionLine.line_code)
+                .order_by(func.count(InspectionRecord.id).desc())
+                .all()
             )
-            .join(
-                ProductionRecord,
-                ProductionLine.id == ProductionRecord.production_line_id,
-            )
-            .join(InspectionRecord, ProductionRecord.lot_id == InspectionRecord.lot_id)
-            .filter(InspectionRecord.inspection_date.between(start_date, end_date))
-            .group_by(ProductionLine.line_code)
-            .order_by(func.count(InspectionRecord.id).desc())
-            .all()
-        )
-
-        return [(line_code, int(count)) for line_code, count in result]
+            logger.info(f"Found {len(result)} production lines with defects")
+            return [(line_code, int(count)) for line_code, count in result]
+        except Exception as e:
+            logger.error(f"Error querying production lines with defects: {str(e)}")
+            raise
 
     # ===== AC 2: Defect trends over time =====
 
@@ -127,44 +136,50 @@ class OperationsReportingService:
 
         Coverage: AC 2
         """
-        trend_data = (
-            self.session.query(
-                InspectionRecord.inspection_date,
-                func.count(InspectionRecord.id).label("defect_count"),
-            )
-            .filter(InspectionRecord.inspection_date.between(start_date, end_date))
-            .group_by(InspectionRecord.inspection_date)
-            .order_by(InspectionRecord.inspection_date)
-            .all()
-        )
-
-        result = []
-        prev_count = None
-
-        for inspection_date, defect_count in trend_data:
-            defect_count = defect_count or 0
-
-            # Determine trend: up/down/stable vs previous day
-            if prev_count is None:
-                trend = "baseline"
-            elif defect_count > prev_count:
-                trend = "increasing"
-            elif defect_count < prev_count:
-                trend = "decreasing"
-            else:
-                trend = "stable"
-
-            result.append(
-                {
-                    "date": inspection_date,
-                    "total_defects": int(defect_count),
-                    "trend_indicator": trend,
-                }
+        logger.info(f"Querying defect trend over time: {start_date} to {end_date}")
+        try:
+            trend_data = (
+                self.session.query(
+                    InspectionRecord.inspection_date,
+                    func.count(InspectionRecord.id).label("defect_count"),
+                )
+                .filter(InspectionRecord.inspection_date.between(start_date, end_date))
+                .group_by(InspectionRecord.inspection_date)
+                .order_by(InspectionRecord.inspection_date)
+                .all()
             )
 
-            prev_count = defect_count
+            result = []
+            prev_count = None
 
-        return result
+            for inspection_date, defect_count in trend_data:
+                defect_count = defect_count or 0
+
+                # Determine trend: up/down/stable vs previous day
+                if prev_count is None:
+                    trend = "baseline"
+                elif defect_count > prev_count:
+                    trend = "increasing"
+                elif defect_count < prev_count:
+                    trend = "decreasing"
+                else:
+                    trend = "stable"
+
+                result.append(
+                    {
+                        "date": inspection_date,
+                        "total_defects": int(defect_count),
+                        "trend_indicator": trend,
+                    }
+                )
+
+                prev_count = defect_count
+
+            logger.info(f"Processed {len(result)} days of defect trend data")
+            return result
+        except Exception as e:
+            logger.error(f"Error querying defect trend: {str(e)}")
+            raise
 
     # ===== AC 3: Defect aggregation by defect type =====
 
@@ -192,35 +207,41 @@ class OperationsReportingService:
 
         Coverage: AC 3
         """
-        defect_data = (
-            self.session.query(
-                InspectionRecord.defect_type,
-                func.sum(InspectionRecord.quantity_defective).label("total_qty"),
-            )
-            .filter(InspectionRecord.inspection_date.between(start_date, end_date))
-            .group_by(InspectionRecord.defect_type)
-            .order_by(func.sum(InspectionRecord.quantity_defective).desc())
-            .all()
-        )
-
-        total = sum(qty or 0 for _, qty in defect_data)
-
-        if total == 0:
-            return []
-
-        result = []
-        for defect_code, qty in defect_data:
-            qty = qty or 0
-            result.append(
-                {
-                    "defect_code": defect_code,
-                    "total_qty": int(qty),
-                    "percentage": round((qty / total) * 100, 2),
-                }
+        logger.info(f"Querying defects by type: {start_date} to {end_date}")
+        try:
+            defect_data = (
+                self.session.query(
+                    InspectionRecord.defect_type,
+                    func.sum(InspectionRecord.quantity_defective).label("total_qty"),
+                )
+                .filter(InspectionRecord.inspection_date.between(start_date, end_date))
+                .group_by(InspectionRecord.defect_type)
+                .order_by(func.sum(InspectionRecord.quantity_defective).desc())
+                .all()
             )
 
-        return result
+            total = sum(qty or 0 for _, qty in defect_data)
 
+            if total == 0:
+                logger.info("No defects found in specified date range")
+                return []
+
+            result = []
+            for defect_code, qty in defect_data:
+                qty = qty or 0
+                result.append(
+                    {
+                        "defect_code": defect_code,
+                        "total_qty": int(qty),
+                        "percentage": round((qty / total) * 100, 2),
+                    }
+                )
+
+            logger.info(f"Found {len(result)} defect types totaling {total} defects")
+            return result
+        except Exception as e:
+            logger.error(f"Error querying defects by type: {str(e)}")
+            raise
     # ===== AC 4: Lot shipment status and data comparison =====
 
     def get_shipped_lots_summary(self) -> List[Dict[str, Any]]:
@@ -242,35 +263,41 @@ class OperationsReportingService:
 
         Coverage: AC 4
         """
-        lots = self.session.query(Lot).all()
-        result = []
+        logger.info("Querying shipped lots summary")
+        try:
+            lots = self.session.query(Lot).all()
+            result = []
 
-        for lot in lots:
-            # Count defects for this lot
-            defect_count = (
-                self.session.query(func.count(InspectionRecord.id))
-                .filter(InspectionRecord.lot_id == lot.id)
-                .scalar()
-                or 0
-            )
+            for lot in lots:
+                # Count defects for this lot
+                defect_count = (
+                    self.session.query(func.count(InspectionRecord.id))
+                    .filter(InspectionRecord.lot_id == lot.id)
+                    .scalar()
+                    or 0
+                )
 
-            # Get shipment status
-            shipment = (
-                self.session.query(ShipmentRecord)
-                .filter(ShipmentRecord.lot_id == lot.id)
-                .first()
-            )
+                # Get shipment status
+                shipment = (
+                    self.session.query(ShipmentRecord)
+                    .filter(ShipmentRecord.lot_id == lot.id)
+                    .first()
+                )
 
-            result.append(
-                {
-                    "lot_code": lot.lot_code,
-                    "ship_status": shipment.ship_status if shipment else "Pending",
-                    "ship_date": shipment.ship_date if shipment else None,
-                    "total_defects": int(defect_count),
-                }
-            )
+                result.append(
+                    {
+                        "lot_code": lot.lot_code,
+                        "ship_status": shipment.ship_status if shipment else "Pending",
+                        "ship_date": shipment.ship_date if shipment else None,
+                        "total_defects": int(defect_count),
+                    }
+                )
 
-        return sorted(result, key=lambda x: x["lot_code"])
+            logger.info(f"Processed shipment summary for {len(result)} lots")
+            return sorted(result, key=lambda x: x["lot_code"])
+        except Exception as e:
+            logger.error(f"Error querying shipped lots summary: {str(e)}")
+            raise
 
     # ===== AC 5: Lot drill-down comparison across departments =====
 
@@ -309,72 +336,79 @@ class OperationsReportingService:
 
         Coverage: AC 5
         """
-        lot = self.session.query(Lot).filter(Lot.lot_code == lot_code).first()
+        logger.info(f"Querying lot report for: {lot_code}")
+        try:
+            lot = self.session.query(Lot).filter(Lot.lot_code == lot_code).first()
 
-        if not lot:
-            return None
+            if not lot:
+                logger.warning(f"Lot not found: {lot_code}")
+                return None
 
-        # Get production records for this lot
-        production_records = (
-            self.session.query(
-                ProductionLine.line_code, ProductionRecord.record_date
+            # Get production records for this lot
+            production_records = (
+                self.session.query(
+                    ProductionLine.line_code, ProductionRecord.record_date
+                )
+                .join(
+                    ProductionRecord,
+                    ProductionLine.id == ProductionRecord.production_line_id,
+                )
+                .filter(ProductionRecord.lot_id == lot.id)
+                .all()
             )
-            .join(
-                ProductionRecord,
-                ProductionLine.id == ProductionRecord.production_line_id,
+
+            # Get inspection/defect records for this lot
+            inspection_records = (
+                self.session.query(
+                    InspectionRecord.defect_type,
+                    InspectionRecord.quantity_defective,
+                    InspectionRecord.inspection_date,
+                )
+                .filter(InspectionRecord.lot_id == lot.id)
+                .all()
             )
-            .filter(ProductionRecord.lot_id == lot.id)
-            .all()
-        )
 
-        # Get inspection/defect records for this lot
-        inspection_records = (
-            self.session.query(
-                InspectionRecord.defect_type,
-                InspectionRecord.quantity_defective,
-                InspectionRecord.inspection_date,
+            total_defects = sum(qty or 0 for _, qty, _ in inspection_records)
+
+            # Get shipment status
+            shipment = (
+                self.session.query(ShipmentRecord)
+                .filter(ShipmentRecord.lot_id == lot.id)
+                .first()
             )
-            .filter(InspectionRecord.lot_id == lot.id)
-            .all()
-        )
 
-        total_defects = sum(qty or 0 for _, qty, _ in inspection_records)
+            # Calculate days to ship if applicable
+            days_to_ship = None
+            if shipment and shipment.ship_status == 'Shipped' and production_records:
+                first_prod_date = min(date for _, date in production_records)
+                days_to_ship = (shipment.ship_date - first_prod_date).days
 
-        # Get shipment status
-        shipment = (
-            self.session.query(ShipmentRecord)
-            .filter(ShipmentRecord.lot_id == lot.id)
-            .first()
-        )
-
-        # Calculate days to ship if applicable
-        days_to_ship = None
-        if shipment and shipment.ship_status == 'Shipped' and production_records:
-            first_prod_date = min(date for _, date in production_records)
-            days_to_ship = (shipment.ship_date - first_prod_date).days
-
-        return {
-            "lot_code": lot.lot_code,
-            "production_info": [
-                {"line": line, "date": dt} for line, dt in production_records
-            ],
-            "quality_info": {
-                "total_defects": int(total_defects),
-                "defects": [
-                    {
-                        "defect_code": defect_code,
-                        "qty": int(qty or 0),
-                        "date": insp_date,
-                    }
-                    for defect_code, qty, insp_date in inspection_records
+            logger.info(f"Lot report generated for {lot_code}: {len(production_records)} production records, {total_defects} defects")
+            return {
+                "lot_code": lot.lot_code,
+                "production_info": [
+                    {"line": line, "date": dt} for line, dt in production_records
                 ],
-            },
-            "shipment_info": {
-                "ship_status": shipment.ship_status if shipment else "Pending",
-                "ship_date": shipment.ship_date if shipment else None,
-                "days_to_ship": days_to_ship,
-            },
-        }
+                "quality_info": {
+                    "total_defects": int(total_defects),
+                    "defects": [
+                        {
+                            "defect_code": defect_code,
+                            "qty": int(qty or 0),
+                            "date": insp_date,
+                        }
+                        for defect_code, qty, insp_date in inspection_records
+                    ],
+                },
+                "shipment_info": {
+                    "ship_status": shipment.ship_status if shipment else "Pending",
+                    "ship_date": shipment.ship_date if shipment else None,
+                    "days_to_ship": days_to_ship,
+                },
+            }
+        except Exception as e:
+            logger.error(f"Error generating lot report for {lot_code}: {str(e)}")
+            raise
 
     # ===== AC 6: Production aggregation by date =====
 
