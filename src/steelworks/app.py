@@ -21,10 +21,12 @@ Date: 2024-02-16
 
 import streamlit as st
 from datetime import date, timedelta
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from dotenv import load_dotenv
+import sentry_sdk
 import logging
 import sys
 
@@ -45,6 +47,12 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 env_path = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(dotenv_path=env_path)
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN"),
+    send_default_pii=False,
+    traces_sample_rate=0.0,
+    enable_logs=False,
+)
 logger.info("Application starting - SteelWorks Operations Reporting Tool")
 logger.info(f"Environment loaded from: {env_path}")
 
