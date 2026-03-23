@@ -14,9 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
       - name: Trigger Render Deploy Hook
         if: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
         run: |
