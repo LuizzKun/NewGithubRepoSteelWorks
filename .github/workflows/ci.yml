@@ -1,0 +1,59 @@
+name: CI - Build & Test
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    name: Build Docker Image & Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: steelworks:${{ github.sha }}
+          cache-from: type=registry,ref=steelworks:buildcache
+          cache-to: type=registry,ref=steelworks:buildcache,mode=max
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy pytest pytest-cov
+      
+      - name: Run ruff formatter check
+        run: python -m ruff format src tests --check
+      
+      - name: Run ruff linter
+        run: python -m ruff check src tests
+      
+      - name: Run mypy type checker
+        run: python -m mypy src tests --ignore-missing-imports
+      
+      - name: Run pytest with coverage
+        run: python -m pytest tests/ -v --cov=src/steelworks --cov-report=xml --cov-report=term-missing
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

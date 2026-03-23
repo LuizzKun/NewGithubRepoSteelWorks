@@ -2,6 +2,8 @@
 
 A Python-based operations reporting system with comprehensive security scanning, code quality checks, and automated CI/CD pipeline.
 
+> **CI/CD Test**: Testing deployment pipeline with Docker build and Render deployment (March 23, 2026)
+
 ## 🛡️ Security Features
 
 ### Software Bill of Materials (SBOM)
