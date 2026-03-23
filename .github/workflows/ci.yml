@@ -1,4 +1,4 @@
-name: Code Quality & Tests
+name: CI - Build & Test
 
 on:
   pull_request:
@@ -7,21 +7,30 @@ on:
     branches: [main, develop]
 
 jobs:
-  quality:
-    name: Code Quality Checks
+  build-and-test:
+    name: Build Docker Image & Run Tests
     runs-on: ubuntu-latest
     
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: steelworks:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |

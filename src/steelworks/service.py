@@ -87,7 +87,9 @@ class OperationsReportingService:
 
         Coverage: AC 1
         """
-        logger.info(f"Querying production lines with most defects: {start_date} to {end_date}")
+        logger.info(
+            f"Querying production lines with most defects: {start_date} to {end_date}"
+        )
         try:
             result = (
                 self.session.query(
@@ -98,7 +100,9 @@ class OperationsReportingService:
                     ProductionRecord,
                     ProductionLine.id == ProductionRecord.production_line_id,
                 )
-                .join(InspectionRecord, ProductionRecord.lot_id == InspectionRecord.lot_id)
+                .join(
+                    InspectionRecord, ProductionRecord.lot_id == InspectionRecord.lot_id
+                )
                 .filter(InspectionRecord.inspection_date.between(start_date, end_date))
                 .group_by(ProductionLine.line_code)
                 .order_by(func.count(InspectionRecord.id).desc())
@@ -242,6 +246,7 @@ class OperationsReportingService:
         except Exception as e:
             logger.error(f"Error querying defects by type: {str(e)}")
             raise
+
     # ===== AC 4: Lot shipment status and data comparison =====
 
     def get_shipped_lots_summary(self) -> List[Dict[str, Any]]:
@@ -379,11 +384,13 @@ class OperationsReportingService:
 
             # Calculate days to ship if applicable
             days_to_ship = None
-            if shipment and shipment.ship_status == 'Shipped' and production_records:
+            if shipment and shipment.ship_status == "Shipped" and production_records:
                 first_prod_date = min(date for _, date in production_records)
                 days_to_ship = (shipment.ship_date - first_prod_date).days
 
-            logger.info(f"Lot report generated for {lot_code}: {len(production_records)} production records, {total_defects} defects")
+            logger.info(
+                f"Lot report generated for {lot_code}: {len(production_records)} production records, {total_defects} defects"
+            )
             return {
                 "lot_code": lot.lot_code,
                 "production_info": [
@@ -471,7 +478,9 @@ class OperationsReportingService:
         results = (
             self.session.query(Lot.lot_code)
             .join(ShipmentRecord, Lot.id == ShipmentRecord.lot_id)
-            .filter(ShipmentRecord.ship_status.in_(['On Hold', 'Backordered', 'Partial']))
+            .filter(
+                ShipmentRecord.ship_status.in_(["On Hold", "Backordered", "Partial"])
+            )
             .all()
         )
         return [lot_code for (lot_code,) in results]
@@ -489,7 +498,7 @@ class OperationsReportingService:
         results = (
             self.session.query(Lot.lot_code, ShipmentRecord.ship_date)
             .join(ShipmentRecord, Lot.id == ShipmentRecord.lot_id)
-            .filter(ShipmentRecord.ship_status == 'Shipped')
+            .filter(ShipmentRecord.ship_status == "Shipped")
             .order_by(ShipmentRecord.ship_date.desc())
             .all()
         )
