@@ -24,8 +24,8 @@ jobs:
           context: .
           push: false
           tags: steelworks:${{ github.sha }}
-          cache-from: type=registry,ref=steelworks:buildcache
-          cache-to: type=registry,ref=steelworks:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       
       - name: Set up Python
         uses: actions/setup-python@v4

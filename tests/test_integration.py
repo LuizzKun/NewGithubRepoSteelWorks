@@ -10,11 +10,10 @@ Requirements:
 """
 
 import pytest
-import os
 from datetime import date, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.steelworks.models import (

@@ -36,7 +36,7 @@ def streamlit_server():
     """Start Streamlit server for E2E testing."""
     # Set test environment
     env = os.environ.copy()
-    test_env = load_dotenv(test_env_path, override=True)
+    load_dotenv(test_env_path, override=True)
     
     # Start Streamlit in background
     process = subprocess.Popen(
@@ -258,9 +258,6 @@ class TestDateRangeFilter:
     
     def test_date_filter_changes_update_dashboard(self, page: Page):
         """Verify changing date range updates dashboard data."""
-        # Get initial state
-        initial_content = page.content()
-        
         # Change start date
         start_date_input = page.locator('input[aria-label*="Start Date"]').first
         if start_date_input.is_visible():
@@ -272,13 +269,9 @@ class TestDateRangeFilter:
             page.keyboard.press("ArrowLeft")
             page.keyboard.press("ArrowLeft")
             page.keyboard.press("Enter")
-            
+
+            # Allow rerun/render cycle to complete after date input changes.
             page.wait_for_timeout(2000)
-            
-            # Verify content changed
-            updated_content = page.content()
-            # Content should update after date change
-            # (This is a basic check; specific assertions depend on data)
 
 
 class TestErrorHandling:
