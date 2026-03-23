@@ -53,7 +53,9 @@ def create_session() -> Session:
     logger.info("Creating database session")
     try:
         db_url = get_database_url()
-        logger.info(f"Connecting to database: {db_url.split('@')[1] if '@' in db_url else 'unknown'}")
+        logger.info(
+            f"Connecting to database: {db_url.split('@')[1] if '@' in db_url else 'unknown'}"
+        )
         engine = create_engine(db_url, echo=False)
         session = Session(engine)
         logger.info("Database session created successfully")

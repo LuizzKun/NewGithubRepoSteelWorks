@@ -36,11 +36,11 @@ from src.steelworks.service import OperationsReportingService
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('steelworks_app.log')
-    ]
+        logging.FileHandler("steelworks_app.log"),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -322,10 +322,14 @@ elif page == "Shipment Status":
             # Metrics
             col1, col2, col3 = st.columns(3)
             with col1:
-                shipped_count = len([s for s in shipment_data if s["ship_status"] == "Shipped"])
+                shipped_count = len(
+                    [s for s in shipment_data if s["ship_status"] == "Shipped"]
+                )
                 st.metric("Shipped Lots", shipped_count)
             with col2:
-                pending_count = len([s for s in shipment_data if s["ship_status"] != "Shipped"])
+                pending_count = len(
+                    [s for s in shipment_data if s["ship_status"] != "Shipped"]
+                )
                 st.metric("Pending Shipments", pending_count)
             with col3:
                 total_defects = sum(s["total_defects"] for s in shipment_data)
@@ -402,15 +406,20 @@ elif page == "Lot Details (Drill-down)":
                 with col1:
                     status_display = {
                         "Shipped": "✅ Shipped",
-                        "On Hold": "⏸️ On Hold", 
+                        "On Hold": "⏸️ On Hold",
                         "Partial": "📦 Partial",
                         "Backordered": "⏳ Backordered",
-                        "Pending": "⏳ Pending"
+                        "Pending": "⏳ Pending",
                     }
-                    status = status_display.get(shipment["ship_status"], shipment["ship_status"])
+                    status = status_display.get(
+                        shipment["ship_status"], shipment["ship_status"]
+                    )
                     st.metric("Status", status)
                 with col2:
-                    st.metric("Ship Date", str(shipment["ship_date"]) if shipment["ship_date"] else "N/A")
+                    st.metric(
+                        "Ship Date",
+                        str(shipment["ship_date"]) if shipment["ship_date"] else "N/A",
+                    )
                 with col3:
                     st.metric("Days to Ship", shipment["days_to_ship"] or "Pending")
             else:
